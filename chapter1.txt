@@ -1,0 +1,86 @@
+■Apache2.4のインストール
+・Apache2.4ダウンロード
+  https://www.apachehaus.com/cgi-bin/download.plx
+・Visual Studio 2015 の Visual C++ 再頒布可能パッケージ
+  https://www.microsoft.com/ja-jp/download/details.aspx?id=48145
+・vcruntime140.dll
+  https://www.microsoft.com/ja-jp/download/details.aspx?id=48145
+
+■VirtualHost
+・ローカルにドメイン追加
+hostsファイル修正
+C:\Windows\System32\drivers\etc\hosts
+
+127.0.0.1 example
+
+・httpd-vhosts.conf修正
+C:\Apache24\conf\extra\httpd-vhosts.conf
+<VirtualHost *:80>
+  ServerName localhost
+  ServerAdmin admin@localhost
+  ErrorLog "${SRVROOT}/logs/error.log"
+  TransferLog "${SRVROOT}/logs/access.log"
+  DocumentRoot "${SRVROOT}/htdocs/localhost"
+  <Directory "${SRVROOT}/htdocs/localhost">
+    AllowOverride None
+    Require all granted
+  </Directory>
+</VirtualHost>
+
+<VirtualHost *:80>
+  ServerName example
+  ServerAdmin admin@example
+  ErrorLog "${SRVROOT}/logs/error.log"
+  TransferLog "${SRVROOT}/logs/access.log"
+  DocumentRoot "${SRVROOT}/htdocs/example"
+  <Directory "${SRVROOT}/htdocs/example">
+    AllowOverride None
+    Require all granted
+  </Directory>
+</VirtualHost>
+
+■SSL
+・サーバー証明書（オレオレ証明書）の発行
+OpenSSL
+C:\Apache24\bin\openssl.exe
+
+秘密鍵を作成
+openssl genpkey -algorithm rsa -pkeyopt rsa_keygen_bits:4096 -out server.key
+自分で署名を行います。有効期限は3650日で10年間
+openssl req -new -x509 -key server.key -days 3650 -out server.crt
+
+You are about to be asked to enter information that will be incorporated
+into your certificate request.
+What you are about to enter is what is called a Distinguished Name or a DN.
+There are quite a few fields but you can leave some blank
+For some fields there will be a default value,
+If you enter '.', the field will be left blank.
+-----
+Country Name (2 letter code) [AU]:JP
+State or Province Name (full name) [Some-State]:
+Locality Name (eg, city) []:
+Organization Name (eg, company) [Internet Widgits Pty Ltd]:
+Organizational Unit Name (eg, section) []:
+Common Name (e.g. server FQDN or YOUR name) []:localhost
+Email Address []:
+
+・httpd-vhosts.conf修正
+Listen 443
+<VirtualHost *:443>
+  ServerName localhost
+  ServerAdmin admin@localhost
+  SSLEngine on
+  SSLCertificateFile "${SRVROOT}/conf/server.crt"
+  SSLCertificateKeyFile "${SRVROOT}/conf/server.key"
+  #SSLCertificateKeyFile "${SRVROOT}/conf/nopass.key"
+  ErrorLog "${SRVROOT}/logs/error.log"
+  TransferLog "${SRVROOT}/logs/access.log"
+  DocumentRoot "${SRVROOT}/htdocs/localhost/
+  <Directory "${SRVROOT}/htdocs/localhost">
+    AllowOverride None
+    Require all granted
+  </Directory>
+  ProxyPass /public !
+  ProxyPass /sp/public !
+  ProxyPass / ajp://localhost:8009/
+</VirtualHost>
